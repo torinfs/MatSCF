@@ -36,7 +36,7 @@ AtomList = {Be, H2, HHe, CO, CH4};
 b6_31G = basisread('6-31G');
 b6_311G = basisread('6-311G');
 bSTO_3G = basisread('STO-3G');
-bcc_pVDZ = basisread('cc-pVDZ');
+bcc_pVDZ = basisread('cc-PVDZ');
 bases = {bSTO_3G, b6_31G, b6_311G, bcc_pVDZ};
 
 %%
@@ -62,8 +62,8 @@ for i = 1:4
 end
 
 if numBases == truth
-    'makebasis() succesful'
+    disp('makebasis() succesful')
 else
-    'makebasis() failed'
+    disp('makebasis() failed')
 end
         

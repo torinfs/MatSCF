@@ -79,7 +79,7 @@ for i = 1:elatms
     
     %Get the information for a specific atom
     atomid = atoms(i);
-    xyzi = xyz(i)/bohr2ang;     %Convert the xyz coordinates to bohr
+    xyzi = xyz(i,:)/bohr2ang;     %Convert the xyz coordinates to bohr
     basisA = basissetdef{atomid};
     
     %Loop through the basissetdef for a specific atom and define each basis

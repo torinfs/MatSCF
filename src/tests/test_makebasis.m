@@ -1,4 +1,5 @@
 %Test script for makebasis()
+clear; clc;
 %%
 %Section 1 - Definition of test molecules
 
@@ -62,8 +63,33 @@ for i = 1:4
 end
 
 if numBases == truth
-    disp('makebasis() succesful')
+    'makebasis() succesful'
 else
-    disp('makebasis() failed')
+    'makebasis() failed'
 end
-        
+
+%%
+%Section 5 - testing of normalization constants
+%I will choose one S, P, and two D functions to test
+alphas = [testBasis(1).alpha(1);...
+          testBasis(4).alpha(1);...
+          testBasis(10).alpha(1);...
+          testBasis(13).alpha(1)];
+      
+true_const = [alphas(1)^(3/4);...
+    2*alphas(2)^(5/4);...
+    4*alphas(3)^(7/4)/sqrt(3);...
+    4*alphas(4)^(7/4)];
+true_const = true_const*(2/pi)^(3/4);
+
+trial_const = [testBasis(1).N(1);...
+               testBasis(4).N(1);...
+               testBasis(10).N(1);...
+               testBasis(13).N(1)];
+
+if (trial_const - true_const < 1e-14)
+    'Normalization successful'
+else
+    'Normalization failed'
+end
+

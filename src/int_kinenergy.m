@@ -21,6 +21,7 @@ for u = 1:blength
         beta = basis(v).alpha;
         
         % Summing over the length of thse basis sets
+        temp = 0;
         for k = 1:length(alpha)
             for l = 1:length(beta)
                 
@@ -31,7 +32,7 @@ for u = 1:blength
                 
                 % Why is this always 1 ?????
                 Kab = exp(-((alpha(k) * beta(l)) / p)...
-                    * abs((A - B)*(A - B)')); 
+                    * (A - B)*(A - B)');
                 
                 % Here w = [x, y, z]
                 for w = 1:3
@@ -54,7 +55,7 @@ for u = 1:blength
                     end
                     
                     % Check for negative b(w)
-                    if b(w) < 2
+                    if b(w) <= 0
                         IntS_1D_neg(w,:) = 0;
                     else
                         for q = 0:((a(w)+b(w)-2)/2)
@@ -71,36 +72,47 @@ for u = 1:blength
                     basis(v).d(l) * basis(u).N(k) ...
                     * basis(v).N(l);
                 
+                
                 % Bracket integrals with different b values i.e. [a|(b + 2)]
                 kalb =  ((pi./p).^(3/2)) * Kab * IntS_1D(1,:)...
                                 * IntS_1D(2,:) * IntS_1D(3,:);
-                kalb_pos = ((pi./p).^(3/2)) * Kab *IntS_1D_pos(1,:)...
-                                * IntS_1D_pos(2,:) * IntS_1D_pos(3,:);
-                kalb_neg = ((pi./p).^(3/2)) * Kab * IntS_1D_neg(1,:)...
-                                * IntS_1D_neg(2,:) * IntS_1D_neg(3,:);
+                            
+                kalb_posx = ((pi./p).^(3/2)) * Kab * IntS_1D_pos(1,:)...
+                                * IntS_1D(2,:) * IntS_1D(3,:);
+                kalb_posy = ((pi./p).^(3/2)) * Kab * IntS_1D(1,:)...
+                                * IntS_1D_pos(2,:) * IntS_1D(3,:);
+                kalb_posz = ((pi./p).^(3/2)) * Kab * IntS_1D(1,:)...
+                                * IntS_1D(2,:) * IntS_1D_pos(3,:);
+                            
+                kalb_negx = ((pi./p).^(3/2)) * Kab * IntS_1D_neg(1,:)...
+                                * IntS_1D(2,:) * IntS_1D(3,:);
+                kalb_negy = ((pi./p).^(3/2)) * Kab * IntS_1D(1,:)...
+                                * IntS_1D_neg(2,:) * IntS_1D(3,:);
+                kalb_negz = ((pi./p).^(3/2)) * Kab * IntS_1D(1,:)...
+                                * IntS_1D(2,:) * IntS_1D_neg(3,:);
                 
                 % Kinetic Energy integrals defined in equation (31)
-                Ix = beta(l)*(2*b(1)+1)*kalb - 2*(beta(l).^2)*kalb_pos...
-                                        - (1/2)*b(1)*(b(1)-1)*kalb_neg;
-                Iy = beta(l)*(2*b(2)+1)*kalb - 2*(beta(l).^2)*kalb_pos...
-                                        - (1/2)*b(2)*(b(2)-1)*kalb_neg;
-                Iz = beta(l)*(2*b(3)+1)*kalb - 2*(beta(l).^2)*kalb_pos...
-                                        - (1/2)*b(3)*(b(3)-1)*kalb_neg;
-                T(u,v) = T_prefactors*(Ix + Iy + Iz);
+                Ix = beta(l)*(2*b(1)+1)*kalb - 2*(beta(l).^2)*kalb_posx...
+                                        - (1/2)*b(1)*(b(1)-1)*kalb_negx;
+                Iy = beta(l)*(2*b(2)+1)*kalb - 2*(beta(l).^2)*kalb_posy...
+                                        - (1/2)*b(2)*(b(2)-1)*kalb_negy;
+                Iz = beta(l)*(2*b(3)+1)*kalb - 2*(beta(l).^2)*kalb_posz...
+                                        - (1/2)*b(3)*(b(3)-1)*kalb_negz;
+                                    
+                T(u,v) = T(u,v) + T_prefactors*(Ix + Iy + Iz);
             end
         end
     end
-    %Nvec(u) = sqrt(1/T(u,u));
 end
 
-T = T + triu(T,1)';
+T = (T + triu(T,1)');
 end
 
 function [y] = f_w(a_w, b_w, P_w, A_w, B_w, K)
     y = 0;
     for j = (max(0,(K-a_w)):min(K,b_w))
         prefactor = nchoosek(a_w, K-j)*nchoosek(b_w, j);
-        other = (P_w-A_w)^(a_w-K+j)*(P_w-B_w)^(b_w-j);
+        other = ((P_w-A_w)^(a_w-K+j))*((P_w-B_w)^(b_w-j));
         y_j = prefactor*other;
         y = y + y_j;
     end

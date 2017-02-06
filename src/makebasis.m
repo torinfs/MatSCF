@@ -193,7 +193,7 @@ function N = normConst(carts, alphas)
     numa = numel(alphas);
     N = zeros(1,numa);
     for i = 1:numa
-        const = (2/pi)^(3/2);
+        const = (2/pi)^(3/4);
         numer = 2^(sum(carts))*alphas(i)^((2*(sum(carts))+3)/4);
         denom = sqrt(fact2(2*carts(1)-1)*...
                      fact2(2*carts(2)-1)*fact2(2*carts(3)-1));

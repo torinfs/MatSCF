@@ -21,7 +21,6 @@ for u = 1:blength
         beta = basis(v).alpha;
         
         % Summing over the length of thse basis sets
-        temp = 0;
         for k = 1:length(alpha)
             for l = 1:length(beta)
                 
@@ -29,43 +28,45 @@ for u = 1:blength
                 % calculation, they live within these sets of loops.
                 p = alpha(k) + beta(l);
                 P = (alpha(k)*A + beta(l)*B)/p;
-                
-                % Why is this always 1 ?????
+
                 Kab = exp(-((alpha(k) * beta(l)) / p)...
-                    * (A - B)*(A - B)');
+                    * norm(A - B)^2);
                 
                 % Here w = [x, y, z]
+                IntS_1D = zeros(3,1);
+                IntS_1D_pos = zeros(3,1);
+                IntS_1D_neg = zeros(3,1);
                 for w = 1:3
+                    
+                    % regular S
                     for i = 0:((a(w)+b(w))/2)
                         f = f_w(a(w), b(w), P(w), A(w), B(w), 2*i);
-                        
-                        % While this is not the best name, this function
-                        % calculates each 1D primative integral per row of
-                        % a matrix.  Therefore, Prim1D(1,:) is the Ix for
-                        % the overlap matrix, and so on.
-                        IntS_1D(w,:) = (f * prod(((2*i) -1):-2:1)) / ...
-                            ((2*p)^i);   
+                        IntS_1D(w,:) = IntS_1D(w,:) + (f * fact2nd(((2*i) -1)) / ...
+                            ((2*p)^i));   
 
                     end
+                    
+                    % b + 2
                     for j = 0:((a(w)+b(w)+2)/2)
                         f_pos = f_w(a(w), b(w) + 2, P(w), A(w), B(w), 2*j);
-                        IntS_1D_pos(w,:) = (f_pos * prod(((2*j) -1):-2:1)) / ...
-                                    ((2*p)^j);
+                        IntS_1D_pos(w,:) = IntS_1D_pos(w,:) +... 
+                            (f_pos * fact2nd(((2*j) -1)) /((2*p)^j));
                     
                     end
                     
-                    % Check for negative b(w)
-                    if b(w) <= 0
+                    % b - 2
+                    % Check for negative b(w) term
+                    if b(w) <= 1
                         IntS_1D_neg(w,:) = 0;
                     else
                         for q = 0:((a(w)+b(w)-2)/2)
                             f_neg = f_w(a(w), b(w) - 2, P(w), A(w), B(w), 2*q);
-                            IntS_1D_neg(w,:) = (f_neg * prod(((2*q) -1):-2:1)) / ...
-                                                ((2*p)^q);
-                    end
-                    
+                            IntS_1D_neg(w,:) = IntS_1D_neg(w,:) + (f_neg * ...
+                                fact2nd(((2*q) -1)) / ((2*p)^q));
+                        end
                         
                     end
+                    
                 end
                 % The equation for IntS is pulled from Eqn. 25
                 T_prefactors = basis(u).d(k) * ...
@@ -74,16 +75,20 @@ for u = 1:blength
                 
                 
                 % Bracket integrals with different b values i.e. [a|(b + 2)]
+                
+                % original overlap
                 kalb =  ((pi./p).^(3/2)) * Kab * IntS_1D(1,:)...
                                 * IntS_1D(2,:) * IntS_1D(3,:);
-                            
+                
+                % b + 2 for each x,y,z exponent            
                 kalb_posx = ((pi./p).^(3/2)) * Kab * IntS_1D_pos(1,:)...
                                 * IntS_1D(2,:) * IntS_1D(3,:);
                 kalb_posy = ((pi./p).^(3/2)) * Kab * IntS_1D(1,:)...
                                 * IntS_1D_pos(2,:) * IntS_1D(3,:);
                 kalb_posz = ((pi./p).^(3/2)) * Kab * IntS_1D(1,:)...
                                 * IntS_1D(2,:) * IntS_1D_pos(3,:);
-                            
+                
+                % b - 2 for each x,y,z exponent            
                 kalb_negx = ((pi./p).^(3/2)) * Kab * IntS_1D_neg(1,:)...
                                 * IntS_1D(2,:) * IntS_1D(3,:);
                 kalb_negy = ((pi./p).^(3/2)) * Kab * IntS_1D(1,:)...
@@ -108,7 +113,7 @@ end
 T = (T + triu(T,1)');
 end
 
-function [y] = f_w(a_w, b_w, P_w, A_w, B_w, K)
+function y = f_w(a_w, b_w, P_w, A_w, B_w, K)
     y = 0;
     for j = (max(0,(K-a_w)):min(K,b_w))
         prefactor = nchoosek(a_w, K-j)*nchoosek(b_w, j);
@@ -116,4 +121,8 @@ function [y] = f_w(a_w, b_w, P_w, A_w, B_w, K)
         y_j = prefactor*other;
         y = y + y_j;
     end
+end
+
+function xfac2 = fact2nd(x)
+    xfac2 = prod(x:-2:1);
 end

@@ -36,6 +36,7 @@ for u = 1:blength
                 
                 % Here w = [x, y, z] as per Eqn. 27.  Consiquentially, this
                 % returns a 
+                Prim1D = zeros(3,1);
                 for w = 1:3
                     for i = 0:((a(w)+b(w))/2)
                         f = f_w(a(w), b(w), P(w), A(w), B(w), 2*i);
@@ -44,7 +45,7 @@ for u = 1:blength
                         % calculates each 1D primative integral per row of
                         % a matrix.  Therefore, Prim1D(1,:) is the Ix for
                         % the overlap matrix, and so on.
-                        Prim1D(w,:) = (f * prod(((2*i) -1):-2:1)) / ...
+                        Prim1D(w,:) = Prim1D(w,:) + (f * prod(((2*i) -1):-2:1)) / ...
                             ((2*p)^i);
 
                     end
@@ -54,7 +55,7 @@ for u = 1:blength
                     basis(v).d(betaLength) * basis(u).N(alphaLength) ...
                     * basis(v).N(betaLength);
                 
-                S(u,v) = S(u,v) + S_prefactors * ((pi./p).^(1/3)) * Kab ...
+                S(u,v) = S(u,v) + S_prefactors * ((pi./p).^(3/2)) * Kab ...
                     * Prim1D(1,:) * Prim1D(2,:) * Prim1D(3,:);
             end
         end
@@ -82,4 +83,3 @@ function [y] = f_w(a_w, b_w, P_w, A_w, B_w, K)
         y = y + y_j;
     end
 end
-

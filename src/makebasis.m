@@ -29,8 +29,7 @@
 
 
 function basis = makebasis(atoms, xyz, basissetdef)
-%
-%Stupid conversion factor I'll fix later
+
 bohr2ang = 0.52917721067;
 %Because of the various number of basis functions defined by each shell
 %type, it is simpler to use a basis function counter, m.

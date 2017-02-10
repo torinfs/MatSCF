@@ -126,7 +126,7 @@ while or(diffE > options.tolEnergy, diffP > options.tolDensity)
     Etotal = E0 + Vnn;
     
     diffE = abs(Elast - Etotal);
-    diffP = max(abs(P(:)-Plast(:)));
+    diffP = max(abs(P(:)-Plast(:)))
 end
 %spy(round(P-Plast, 6))
 out.C = C;

@@ -15,7 +15,7 @@ function [ out ] = mocalc( atoms, xyz, totalcharge, options )
 %
 %   options            a structure that contains several fields
 %        .basisset     string specifying the basis set, e.g. '6-31G', 
-%                      '0cc-pVDZ', 'STO-3G' SCF convergence tolerance 
+%                      'cc-pVDZ', 'STO-3G' SCF convergence tolerance 
 %                      for the energy (hartrees)
 %        .tolEnergy    SCF convergence tolerance for the energy (Hartrees)
 %        .tolDensity   SCF convergence tolerance for the density ( a0^-3)
@@ -60,20 +60,16 @@ out = struct(...
             'basis',     basis);
 
 
-nEl = sum(atoms - totalcharge)/2;
+nMOs = sum(atoms - totalcharge)/2;
 a0 = 0.52917721067;
-
-% Now for the complicated things:
 
 % Fock Matrix: F = T + V_ne + V_ee.  For the initial guess, I am dropping
 % all of the interaction terms.
 h = out.T + out.Vne;
 F = h;
-[C, epsilon] = eig(F, out.S);
-P = 2*(C(:,1:nEl)*C(:,1:nEl)');
-diffE = 1000 + options.tolEnergy;
-diffP = 1000 + options.tolDensity;
+P = zeros(length(F)); % start with P as zeros
 
+% Get Nuclear-Nuclear repulsion energy
 Vnn = 0;
 for c = 1:length(atoms)
     for d = c+1:length(atoms)
@@ -84,44 +80,59 @@ Etotal = Vnn;
 
 % SCF Loop
 ERI = out.Vee;
+diffE = 1000 + options.tolEnergy;
+diffP = 1000 + options.tolDensity;
 count = 0;
-while abs(diffE) > options.tolEnergy %diffP > options.tolDensity & 
+while or(diffE > options.tolEnergy, diffP > options.tolDensity)
+    
     Elast = Etotal;
     Plast = P;
     Vee = zeros(size(F));
     E0 = 0;
-    count = count +1
+    count = count+1;
     for mu = 1:length(F)
         for nu = 1:length(F)
+            
             for kappa = 1:length(F)
                 for lambda = 1:length(F)
-                    Vee(mu,nu) = Vee(mu, nu) + P(kappa,lambda) * ...
+                    Vee(mu,nu) = Vee(mu,nu) + P(kappa,lambda) * ...
                         (ERI(mu,nu,lambda,kappa) + 0.5 * ...
                         ERI(mu,kappa,lambda,nu));
                 end
             end
             E0 = E0 + (0.5 * P(mu, nu) * (2*h(mu, nu) + Vee(mu, nu)));
+        
         end
     end
-    E0
+    % Update Fock
     F = h + Vee;
-
-    %Shouldn't this be sorted anyway?
-    [C, epsilon] = eig(F, out.S, 'vector');
-    [epsilon, eI] = sort(epsilon);
+    
+    % Solve Roothan
+    [C, epsilon] = eig(F, out.S);
+    
+    % Sort MO coeff matrix
+    [epsilon, eI] = sort(diag(epsilon));
     C = C(:,eI);
-    % Need to sort C in ascending order of orbital energies
-    P = 2 * (C(:,1:nEl) * C(:,1:nEl)');
+    
+    % Normalize C
+    normal = sqrt(diag(C'*out.S*C));
+    for c=1:length(C)
+        C(:,c) = C(:,c)/normal(c);
+    end
+    
+    % Update Density
+    P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)');
 
     Etotal = E0 + Vnn;
-
-    diffE = Elast - Etotal;
-    diffP = Plast - P;
+    
+    diffE = abs(Elast - Etotal);
+    diffP = max(abs(P(:)-Plast(:)));
 end
-
+%spy(round(P-Plast, 6))
 out.C = C;
 out.P = P;
 out.epsilon = epsilon;
 out.E0 = E0;
 out.Etot = Etotal;
 end
+

@@ -10,5 +10,4 @@ options = struct(...
                 'tolDensity',   0.0001);
                 
 
-
 out = mocalc(water.Elements,water.xyz,water.TotalCharge,options);

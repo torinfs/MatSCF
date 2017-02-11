@@ -60,7 +60,7 @@ out = struct(...
             'basis',     basis);
 
 
-nMOs = sum(atoms - totalcharge)/2;
+nMOs = (sum(atoms) - totalcharge)/2;
 a0 = 0.52917721067;
 
 % Fock Matrix: F = T + V_ne + V_ee.  For the initial guess, I am dropping
@@ -123,10 +123,10 @@ while or(diffE > options.tolEnergy, diffP > options.tolDensity)
     % Update Density
     P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)');
 
-    Etotal = E0 + Vnn;
+    Etotal = E0 + Vnn
     
     diffE = abs(Elast - Etotal);
-    diffP = max(abs(P(:)-Plast(:)))
+    diffP = max(abs(P(:)-Plast(:)));
 end
 %spy(round(P-Plast, 6))
 out.C = C;

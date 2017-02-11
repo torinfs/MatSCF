@@ -101,7 +101,7 @@ T = p*q/(p+q)*norm(P-Q).^2;
 m = 0:(sum(a) + sum(b) + sum(c) + sum(d));
 KAB = exp(-alpha*beta /p*sum(AB.^2));
 KCD = exp(-gamma*delta/q*sum(CD.^2));
-ssss_m = 2*pi^(5/2)/p/q/sqrt(p+q)*KAB*KCD*BoysF(T,m);
+ssss_m = 2*pi^(5/2)/p/q/sqrt(p+q)*KAB*KCD*boysF(T, m);
 
 PA = P-A;
 WP = W-P;

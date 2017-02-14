@@ -66,6 +66,7 @@ a0 = 0.52917721067;
 % Fock Matrix: F = T + V_ne + V_ee.  For the initial guess, I am dropping
 % all of the interaction terms.
 h = out.T + out.Vne;
+
 F = h;
 P = zeros(length(F)); % start with P as zeros
 
@@ -78,25 +79,25 @@ for c = 1:length(atoms)
 end
 Etotal = Vnn;
 
+
 % SCF Loop
 ERI = out.Vee;
 diffE = 1000 + options.tolEnergy;
 diffP = 1000 + options.tolDensity;
-count = 0;
+
 while or(diffE > options.tolEnergy, diffP > options.tolDensity)
     
     Elast = Etotal;
     Plast = P;
     Vee = zeros(size(F));
     E0 = 0;
-    count = count+1;
     for mu = 1:length(F)
         for nu = 1:length(F)
             
             for kappa = 1:length(F)
                 for lambda = 1:length(F)
                     Vee(mu,nu) = Vee(mu,nu) + P(kappa,lambda) * ...
-                        (ERI(mu,nu,lambda,kappa) + 0.5 * ...
+                        (ERI(mu,nu,lambda,kappa) - 0.5 * ...
                         ERI(mu,kappa,lambda,nu));
                 end
             end
@@ -104,31 +105,30 @@ while or(diffE > options.tolEnergy, diffP > options.tolDensity)
         
         end
     end
+    
     % Update Fock
     F = h + Vee;
     
     % Solve Roothan
     [C, epsilon] = eig(F, out.S);
-    
+
     % Sort MO coeff matrix
     [epsilon, eI] = sort(diag(epsilon));
     C = C(:,eI);
     
     % Normalize C
     normal = sqrt(diag(C'*out.S*C));
-    for c=1:length(C)
+    for c = 1:length(C)
         C(:,c) = C(:,c)/normal(c);
     end
     
-    % Update Density
+    % Update Density & energy
     P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)');
-
-    Etotal = E0 + Vnn
+    Etotal = E0 + Vnn;
     
     diffE = abs(Elast - Etotal);
     diffP = max(abs(P(:)-Plast(:)));
 end
-%spy(round(P-Plast, 6))
 out.C = C;
 out.P = P;
 out.epsilon = epsilon;

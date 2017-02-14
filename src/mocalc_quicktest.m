@@ -2,7 +2,7 @@
 
 clear; clc;
 load('testcases_v04.mat');
-water = testcase(6);
+water = testcase(9);
 
 options = struct(...
                 'basisset',     water.Basis,...

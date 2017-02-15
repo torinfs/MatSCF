@@ -189,11 +189,12 @@ elseif strcmp(options.Method,'KS')
         end
 
         % Update Density & energy
-        P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)');
+        P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)')
         Etotal = E0 + Vnn;
         
-        [Vxc, Exc, rhoInt] = int_XC(basis, P, molgrid, options.CorrFunctional);
-        
+        [Vxc, Exc, rhoInt] = int_XC(basis, P, molgrid,...
+            options.CorrFunctional);
+        rhoInt
         diffE = abs(Elast - Etotal);
         diffP = max(abs(P(:)-Plast(:)));
     end

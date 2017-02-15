@@ -20,32 +20,38 @@ Exc = 0;
 
 % Calculate rho(r) from grid
 for iGrid = 1:numel(MolGrid.weights)
+    
     r = MolGrid.xyz(iGrid,:);
     w = MolGrid.weights(iGrid);
+    
+    if w < 1e-10
+        continue
+    end
+    
     rho = 0;
 
     base = zeros(numel(basis),1);
     
     for mu = 1:numel(basis)
-        
-        musum = 0;
-        xminA = r(1) - basis(mu).A(1);
-        yminA = r(2) - basis(mu).A(2);
-        zminA = r(3) - basis(mu).A(3);
-
+        ksum = 0;
         for k = 1:numel(basis(mu).d)
-            musum = musum + basis(mu).d(k)*basis(mu).N(k)*...
-                exp(-basis(mu).alpha(k)*(xminA^2 + yminA^2 +zminA^2));
+            ksum = ksum + basis(mu).d(k)*basis(mu).N(k)*...
+                exp(-basis(mu).alpha(k)*norm(r-basis(mu).A)^2);
         end
-
-        base(mu) = xminA^(basis(mu).a(1))*yminA^(basis(mu).a(2))*...
-            zminA^(basis(mu).a(3))*musum;
+        base(mu) = (r(1)-basis(mu).A(1))^(basis(mu).a(1))*...
+            (r(2)-basis(mu).A(2))^(basis(mu).a(2))*...
+            (r(3)-basis(mu).A(3))^(basis(mu).a(3))*...
+            ksum;
     end
     
     for mu = 1:numel(basis)
         for nu = 1:numel(basis)
             rho = rho + P(mu,nu)*base(mu)*base(nu);
         end
+    end
+    
+    if rho < 1e-10
+        continue
     end
     
     % Final rhoInt value

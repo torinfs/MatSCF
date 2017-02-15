@@ -65,9 +65,6 @@ for iGrid = 1:numel(MolGrid.weights)
         end
     end
     
-    if any(r>20)
-        'here'
-    end
    
     Vxc = Vxc + temp_Vxc*w;
     

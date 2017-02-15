@@ -41,7 +41,7 @@ for i = 1:numel(out.basis)
 
     for k = 1:numel(out.basis(i).d)
         primsum = primsum + out.basis(i).d(k)*out.basis(i).N(k)*...
-            exp(-out.basis(i).alpha(k)*sqrt(xminA.^2 + yminA.^2 +zminA.^2));
+            exp(-out.basis(i).alpha(k)*(xminA.^2 + yminA.^2 +zminA.^2));
     end
     
     base = xminA.^(out.basis(i).a(1)).*yminA.^(out.basis(i).a(2)).*...

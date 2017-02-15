@@ -11,6 +11,8 @@ function [ Vxc, Exc, rhoInt ] = int_XC( basis, P, DGrid, flag )
 %       Vxc = MxM exchange-correlation potential matrix
 %       Exc = exchange-correlation energy
 %       rhoInt = Integral of density over allspace. Equal to N electrons.
+%
+%
 
 rhoInt = 0;
 Vxc = zeros(size(basis));

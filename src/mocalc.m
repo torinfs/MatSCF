@@ -163,8 +163,8 @@ elseif strcmp(options.Method,'KS')
 
                 for kappa = 1:length(F)
                     for lambda = 1:length(F)
-                        J(mu,nu) = J(mu,nu) + P(kappa,lambda) * ...
-                            ERI(mu,nu,lambda,kappa);
+                        J(mu,nu) = J(mu,nu) + (P(kappa,lambda) * ...
+                            ERI(mu,nu,lambda,kappa));
                     end
                 end
                 E0 = E0 + 0.5 * ((2*h(mu, nu) + J(mu, nu))*P(mu, nu) + Exc);

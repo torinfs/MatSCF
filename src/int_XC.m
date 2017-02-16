@@ -4,8 +4,8 @@ function [ Vxc, Exc, rhoInt ] = int_XC( basis, P, MolGrid, flag )
 %   INPUTS:
 %       basis = basis set from structure array of mocalc output
 %       P = MxM Density matrix
-%       DGrid = molcular grid
-%       flag = string specifying functional i.e 'SVWN3'
+%       MolGrid = molcular grid
+%       flag = string specifying functional i.e 'VWN3'
 %
 %   OUTPUTS:
 %       Vxc = MxM exchange-correlation potential matrix
@@ -15,7 +15,7 @@ function [ Vxc, Exc, rhoInt ] = int_XC( basis, P, MolGrid, flag )
 %
 
 rhoInt = 0;
-Vxc = zeros(size(basis));
+Vxc = zeros(length(basis));
 Exc = 0;
 
 % Calculate rho(r) from grid
@@ -24,33 +24,31 @@ for iGrid = 1:numel(MolGrid.weights)
     r = MolGrid.xyz(iGrid,:);
     w = MolGrid.weights(iGrid);
     
-    if w < 1e-10
+    if w < 1e-12
         continue
     end
     
     rho = 0;
-
     base = zeros(numel(basis),1);
     
     for mu = 1:numel(basis)
         ksum = 0;
         for k = 1:numel(basis(mu).d)
-            ksum = ksum + basis(mu).d(k)*basis(mu).N(k)*...
-                exp(-basis(mu).alpha(k)*norm(r-basis(mu).A)^2);
+            ksum = ksum + (basis(mu).d(k)*basis(mu).N(k)*...
+                exp(-basis(mu).alpha(k)*norm(r-basis(mu).A)^2));
         end
         base(mu) = (r(1)-basis(mu).A(1))^(basis(mu).a(1))*...
             (r(2)-basis(mu).A(2))^(basis(mu).a(2))*...
-            (r(3)-basis(mu).A(3))^(basis(mu).a(3))*...
-            ksum;
+            (r(3)-basis(mu).A(3))^(basis(mu).a(3))*ksum;
     end
     
     for mu = 1:numel(basis)
-        for nu = 1:numel(basis)
+        for nu = mu:numel(basis)
             rho = rho + P(mu,nu)*base(mu)*base(nu);
         end
     end
     
-    if rho < 1e-10
+    if rho < 1e-12
         continue
     end
     

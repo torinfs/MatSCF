@@ -5,20 +5,27 @@ function [ out ] = mocalc( atoms, xyz, totalcharge, options )
 % be:
 %
 % Input:
-%   atoms              list of element numbers (array with K elements); 
-%                      e.g. [6 8] for CO 
+%   atoms                list of element numbers (array with K elements); 
+%                        e.g. [6 8] for CO 
 %
-%   xyz                Kx3 array of Cartesian coordinates of a nuclei, in
-%                      ångström.
+%   xyz                  Kx3 array of Cartesian coordinates of a nuclei, in
+%                        ångström.
 %
-%   totalcharge        total charge of the molecule, in elementary charges
+%   totalcharge          total charge of the molecule, in elementary charges
 %
-%   options            a structure that contains several fields
-%        .basisset     string specifying the basis set, e.g. '6-31G', 
-%                      'cc-pVDZ', 'STO-3G' SCF convergence tolerance 
-%                      for the energy (hartrees)
-%        .tolEnergy    SCF convergence tolerance for the energy (Hartrees)
-%        .tolDensity   SCF convergence tolerance for the density ( a0^-3)
+%   options              a structure that contains several fields
+%        .basisset       string specifying the basis set, e.g. '6-31G', 
+%                        'cc-pVDZ', 'STO-3G' SCF convergence tolerance 
+%                        for the energy (hartrees)
+%        .tolEnergy      SCF convergence tolerance for the energy (Hartrees)
+%        .tolDensity     SCF convergence tolerance for the density ( a0^-3)
+%        .Method         String specifying method. 'HF' or 'KS' supported
+%        .ExchFunctional A way too long specifier for the exchange
+%                        functional. 'Slater' supported.
+%        .CorrFunctional A specifer (also too long) for the correlation
+%                        functional. 'VWN3' and 'VWN5' supported.
+%        .nRadialPoints  Number of radial points in integration grid.
+%        .nAngularPoints Number of angular points in integration grid.
 %
 % Output:
 %   out                a structure that contains several fields:
@@ -61,7 +68,7 @@ out = struct(...
 
 
 nMOs = (sum(atoms) - totalcharge)/2;
-a0 = 0.52917721067;
+a0 = 0.52917721067; %A/a0
 
 % Fock Matrix: F = T + V_ne + V_ee.  For the initial guess, I am dropping
 % all of the interaction terms.
@@ -69,6 +76,9 @@ h = out.T + out.Vne;
 
 F = h;
 P = zeros(length(F)); % start with P as zeros
+
+Exc = 0;
+Vxc = zeros(length(basis));
 
 % Get Nuclear-Nuclear repulsion energy
 Vnn = 0;
@@ -79,60 +89,123 @@ for c = 1:length(atoms)
 end
 Etotal = Vnn;
 
-
 % SCF Loop
 ERI = out.Vee;
 diffE = 1000 + options.tolEnergy;
 diffP = 1000 + options.tolDensity;
-
-while or(diffE > options.tolEnergy, diffP > options.tolDensity)
+if strcmp(options.Method, 'HF')
     
-    Elast = Etotal;
-    Plast = P;
-    Vee = zeros(size(F));
-    E0 = 0;
-    for mu = 1:length(F)
-        for nu = 1:length(F)
-            
-            for kappa = 1:length(F)
-                for lambda = 1:length(F)
-                    Vee(mu,nu) = Vee(mu,nu) + P(kappa,lambda) * ...
-                        (ERI(mu,nu,lambda,kappa) - 0.5 * ...
-                        ERI(mu,kappa,lambda,nu));
+    while or(diffE > options.tolEnergy, diffP > options.tolDensity)
+
+        Elast = Etotal;
+        Plast = P;
+        Vee = zeros(size(F));
+        E0 = 0;
+        for mu = 1:length(F)
+            for nu = 1:length(F)
+
+                for kappa = 1:length(F)
+                    for lambda = 1:length(F)
+                        Vee(mu,nu) = Vee(mu,nu) + P(kappa,lambda) * ...
+                            (ERI(mu,nu,lambda,kappa) - 0.5 * ...
+                            ERI(mu,kappa,lambda,nu));
+                    end
                 end
-            end
-            E0 = E0 + (0.5 * P(mu, nu) * (2*h(mu, nu) + Vee(mu, nu)));
-        
-        end
-    end
-    
-    % Update Fock
-    F = h + Vee;
-    
-    % Solve Roothan
-    [C, epsilon] = eig(F, out.S);
+                E0 = E0 + (0.5 * P(mu, nu) * (2*h(mu, nu) + Vee(mu, nu)));
 
-    % Sort MO coeff matrix
-    [epsilon, eI] = sort(diag(epsilon));
-    C = C(:,eI);
-    
-    % Normalize C
-    normal = sqrt(diag(C'*out.S*C));
-    for c = 1:length(C)
-        C(:,c) = C(:,c)/normal(c);
+            end
+        end
+
+        % Update Fock
+        F = h + Vee;
+
+        % Solve Roothan
+        [C, epsilon] = eig(F, out.S);
+
+        % Sort MO coeff matrix
+        [epsilon, eI] = sort(diag(epsilon));
+        C = C(:,eI);
+
+        % Normalize C
+        normal = sqrt(diag(C'*out.S*C));
+        for c = 1:length(C)
+            C(:,c) = C(:,c)/normal(c);
+        end
+
+        % Update Density & energy
+        P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)');
+        Etotal = E0 + Vnn;
+
+        diffE = abs(Elast - Etotal);
+        diffP = max(abs(P(:)-Plast(:)));
+        
     end
     
-    % Update Density & energy
-    P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)');
-    Etotal = E0 + Vnn;
-    
-    diffE = abs(Elast - Etotal);
-    diffP = max(abs(P(:)-Plast(:)));
+elseif strcmp(options.Method,'KS')
+
+    molgrid = struct('xyz',[],'weights',[]);
+
+    for j = 1:numel(atoms)
+        temp = atomic_grid(j, xyz/a0, atoms,...
+            options.nRadialPoints,options.nAngularPoints);
+        molgrid.xyz = [molgrid.xyz; temp.xyz];
+        molgrid.weights = [molgrid.weights; temp.weights];
+    end
+
+    while or(diffE > options.tolEnergy, diffP > options.tolDensity)
+
+        Elast = Etotal;
+        Plast = P;
+        J = zeros(size(F));
+        E0 = 0;
+        [Vxc, Exc, rhoInt] = int_XC(basis, P, molgrid, options.CorrFunctional);
+        
+        for mu = 1:length(F)
+            for nu = 1:length(F)
+                J_ = 0;
+                for kappa = 1:length(F)
+                    for lambda = 1:length(F)
+                        J_ = J_ + P(kappa,lambda) * ...
+                            ERI(mu,nu,lambda,kappa);
+                    end
+                end
+                J(mu,nu) = J_;
+                E0 = E0 + 0.5 * ((2*h(mu, nu) + J(mu, nu))*P(mu, nu));
+
+            end
+        end
+        E0 = E0 + Exc;
+        % Update Fock
+        F = h + J + Vxc;
+
+        % Solve Roothan
+        [C, epsilon] = eig(F, out.S);
+
+        % Sort MO coeff matrix
+        [epsilon, eI] = sort(diag(epsilon));
+        C = C(:,eI);
+
+        % Normalize C
+        normal = sqrt(diag(C'*out.S*C));
+        for c = 1:length(C)
+            C(:,c) = C(:,c)/normal(c);
+        end
+
+        % Update Density & energy
+        P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)');
+        Etotal = E0 + Vnn;
+        
+       
+        diffE = abs(Elast - Etotal);
+        diffP = max(abs(P(:)-Plast(:)));
+    end
+else
+    disp('Unsupported method specified')
 end
+out.Exc = Exc;
 out.C = C;
 out.P = P;
 out.epsilon = epsilon;
 out.E0 = E0;
 out.Etot = Etotal;
 end
-

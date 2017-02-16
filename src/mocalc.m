@@ -158,20 +158,23 @@ elseif strcmp(options.Method,'KS')
         Plast = P;
         J = zeros(size(F));
         E0 = 0;
+        [Vxc, Exc, rhoInt] = int_XC(basis, P, molgrid, options.CorrFunctional);
+        
         for mu = 1:length(F)
             for nu = 1:length(F)
-
+                J_ = 0;
                 for kappa = 1:length(F)
                     for lambda = 1:length(F)
-                        J(mu,nu) = J(mu,nu) + (P(kappa,lambda) * ...
-                            ERI(mu,nu,lambda,kappa));
+                        J_ = J_ + P(kappa,lambda) * ...
+                            ERI(mu,nu,lambda,kappa);
                     end
                 end
-                E0 = E0 + 0.5 * ((2*h(mu, nu) + J(mu, nu))*P(mu, nu) + Exc);
+                J(mu,nu) = J_;
+                E0 = E0 + 0.5 * ((2*h(mu, nu) + J(mu, nu))*P(mu, nu));
 
             end
         end
-        
+        E0 = E0 + Exc;
         % Update Fock
         F = h + J + Vxc;
 
@@ -189,19 +192,16 @@ elseif strcmp(options.Method,'KS')
         end
 
         % Update Density & energy
-        P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)')
+        P = 2 * (C(:,1:nMOs) * C(:,1:nMOs)');
         Etotal = E0 + Vnn;
         
-        [Vxc, Exc, rhoInt] = int_XC(basis, P, molgrid,...
-            options.CorrFunctional);
-        rhoInt
+       
         diffE = abs(Elast - Etotal);
         diffP = max(abs(P(:)-Plast(:)));
     end
 else
     disp('Unsupported method specified')
 end
-
 out.Exc = Exc;
 out.C = C;
 out.P = P;

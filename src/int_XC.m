@@ -13,7 +13,7 @@ function [ Vxc, Exc, rhoInt ] = int_XC( basis, P, MolGrid, flag )
 %       rhoInt = Integral of density over allspace. Equal to N electrons.
 
 rhoInt = 0;
-Vxc = zeros(size(basis));
+Vxc = zeros(length(basis));
 Exc = 0;
 
 % Calculate rho(r) from grid
@@ -28,7 +28,7 @@ for iGrid = 1:numel(MolGrid.weights)
     
     rho = 0;
 
-    base = zeros(numel(basis),1);
+    chi = zeros(numel(basis),1);
     
     for mu = 1:numel(basis)
         ksum = 0;
@@ -36,15 +36,14 @@ for iGrid = 1:numel(MolGrid.weights)
             ksum = ksum + basis(mu).d(k)*basis(mu).N(k)*...
                 exp(-basis(mu).alpha(k)*norm(r-basis(mu).A)^2);
         end
-        base(mu) = (r(1)-basis(mu).A(1))^(basis(mu).a(1))*...
+        chi(mu) = (r(1)-basis(mu).A(1))^(basis(mu).a(1))*...
             (r(2)-basis(mu).A(2))^(basis(mu).a(2))*...
-            (r(3)-basis(mu).A(3))^(basis(mu).a(3))*...
-            ksum;
+            (r(3)-basis(mu).A(3))^(basis(mu).a(3))*ksum;
     end
     
     for mu = 1:numel(basis)
         for nu = 1:numel(basis)
-            rho = rho + P(mu,nu)*base(mu)*base(nu);
+            rho = rho + P(mu,nu)*chi(mu)*chi(nu);
         end
     end
     
@@ -57,28 +56,22 @@ for iGrid = 1:numel(MolGrid.weights)
     
     [ec, vc] = VWN(rho, flag);
     
-    eps_xc = (-3/4*(3/pi)^(1/3)*rho^(1/3)) + ec;
+    Cx = 3/4*(3/pi)^(1/3);
+    
+    eps_xc = -Cx*rho^(1/3) + ec;
     
     Exc = Exc + eps_xc*rho*w;
-
-    temp_Vxc = zeros(numel(basis));
     
     for mu = 1:numel(basis)
         for nu = 1:numel(basis)
-            temp_Vxc(mu,nu) = base(mu)*(vc - (3/pi*rho)^1/3)*base(nu);
+            Vxc(mu,nu) = Vxc(mu,nu) +...
+                chi(mu)*(vc - Cx*(rho^(1/3)))*chi(nu)*w;
         end
     end
-    
-   
-    Vxc = Vxc + temp_Vxc*w;
+
     
 end
 
-end
-
-
-function vxs = xvslater(rho)
-    vxs = -(3/pi*rho)^1/3;
 end
 
 % Correlation functionals

@@ -35,11 +35,11 @@ for iGrid = 1:numel(MolGrid.weights)
         ksum = 0;
         for k = 1:numel(basis(mu).d)
             ksum = ksum + (basis(mu).d(k)*basis(mu).N(k)*...
-                exp(-basis(mu).alpha(k)*norm(r-basis(mu).A)^2));
+                        exp(-basis(mu).alpha(k)*norm(r-basis(mu).A)^2));
         end
         base(mu) = (r(1)-basis(mu).A(1))^(basis(mu).a(1))*...
-            (r(2)-basis(mu).A(2))^(basis(mu).a(2))*...
-            (r(3)-basis(mu).A(3))^(basis(mu).a(3))*ksum;
+                    (r(2)-basis(mu).A(2))^(basis(mu).a(2))*...
+                    (r(3)-basis(mu).A(3))^(basis(mu).a(3))*ksum;
     end
     
     for mu = 1:numel(basis)

@@ -21,9 +21,9 @@ for iGrid = 1:numel(MolGrid.weights)
     r = MolGrid.xyz(iGrid,:);
     w = MolGrid.weights(iGrid);
     
-    if w < 1e-10
-        continue
-    end
+%     if w < 1e-12
+%         continue
+%     end
     
     rho = 0;
 
@@ -62,9 +62,6 @@ for iGrid = 1:numel(MolGrid.weights)
     
     eps_xc = ex + ec;
     Exc = Exc + eps_xc*rho*w;
-    
-    Ex = Ex + ex*rho*w;
-    Ec = Ec + ec*rho*w;
     
     for mu = 1:numel(basis)
         for nu = 1:numel(basis)

@@ -202,6 +202,10 @@ elseif strcmp(options.Method,'KS')
 else
     disp('Unsupported method specified')
 end
+
+
+
+
 out.Exc = Exc;
 out.C = C;
 out.P = P;

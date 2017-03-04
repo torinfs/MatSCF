@@ -8,6 +8,7 @@ for i=1:numel(in.epsilon)
 end
 dim = length(eriAO);
 
+fprintf('Solving MP2 Energy...\n')
 eriMO = zeros(dim,dim,dim,dim);
 for p = 1:dim
     for q = 1:dim
@@ -27,6 +28,7 @@ for p = 1:dim
         end
     end
 end
+
 
 sdim = 2*dim;
 seri = zeros(sdim,sdim,sdim,sdim);
@@ -62,7 +64,7 @@ for i = 1:nel
 end
 
 
-out = {emp2, eriMO};
+out = emp2;
 
 end
 

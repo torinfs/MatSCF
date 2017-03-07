@@ -9,6 +9,7 @@ function [ out ] = tdhf( in, nel )
 %       out
 %
 
+
 cAO = in.C;
 eriAO = in.Vee;
 for i=1:numel(in.epsilon)
@@ -23,6 +24,7 @@ temp2 = zeros(dim,dim,dim,dim);
 temp3 = zeros(dim,dim,dim,dim);
 eriMO = zeros(dim,dim,dim,dim);
 
+
 % N^5 scaling transformation
 for p = 1:dim
    for mu = 1:dim
@@ -31,11 +33,13 @@ for p = 1:dim
    
    for q = 1:dim
        for nu = 1:dim
+
            temp2(p,q,:,:) = temp2(p,q,:,:) + cAO(nu, q)*temp(p,nu,:,:);
        end
        
        for r = 1:dim
             for lam = 1:dim
+
                 temp3(p,q,r,:) = temp3(p,q,r,:) + cAO(lam, r)*temp2(p,q,lam,:);
             end
             
@@ -50,7 +54,6 @@ for p = 1:dim
        end
    end
 end
-
 
 sdim = 2*dim;
 seri = zeros(sdim,sdim,sdim,sdim);
@@ -75,6 +78,7 @@ end
 
 A = zeros(sdim);
 B = zeros(sdim);
+
 
 ia = 0;
 
@@ -123,7 +127,6 @@ for i=1:length(etd)
     end
 end
 fprintf('----------------------------------------\n')
-
 end
 
 function y = fs( x )

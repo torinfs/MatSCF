@@ -1,14 +1,5 @@
-function [ out ] = tdhf( in, nel )
-%TDHF Calculates resonant absorbtion frequencies
-%
-%   Inputs:
-%       in
-%       nel --  number of electrons in system
-%
-%   Outputs:
-%       out
-%
-
+function [ out ] = mp2( in, nel )
+%Caclulates the correlation energy according to 2nd order moller plesset PT
 
 cAO = in.C;
 eriAO = in.Vee;
@@ -17,15 +8,13 @@ for i=1:numel(in.epsilon)
 end
 dim = length(eriAO);
 
-fprintf('Transforming integrals to MO basis...\n')
+fprintf('Solving MP2 Energy...\n')
 
 temp = zeros(dim,dim,dim,dim);
 temp2 = zeros(dim,dim,dim,dim);
 temp3 = zeros(dim,dim,dim,dim);
 eriMO = zeros(dim,dim,dim,dim);
 
-
-% N^5 scaling transformation
 for p = 1:dim
    for mu = 1:dim
       temp(p,:,:,:) = temp(p,:,:,:) + cAO(mu, p)*eriAO(mu,:,:,:);
@@ -33,13 +22,11 @@ for p = 1:dim
    
    for q = 1:dim
        for nu = 1:dim
-
            temp2(p,q,:,:) = temp2(p,q,:,:) + cAO(nu, q)*temp(p,nu,:,:);
        end
        
        for r = 1:dim
             for lam = 1:dim
-
                 temp3(p,q,r,:) = temp3(p,q,r,:) + cAO(lam, r)*temp2(p,q,lam,:);
             end
             
@@ -54,6 +41,7 @@ for p = 1:dim
        end
    end
 end
+
 
 sdim = 2*dim;
 seri = zeros(sdim,sdim,sdim,sdim);
@@ -76,60 +64,30 @@ for p = 1:sdim
     end
 end
 
-A = zeros(sdim);
-B = zeros(sdim);
-
-
-ia = 0;
-
-fprintf('Forming A and B...\n')
+emp2 = 0;
 for i = 1:nel
-    for a = nel+1:sdim
-        ia = ia + 1;
-        jb = 0;
-        for j = 1:nel
+    for j = 1:nel
+        for a = nel+1:sdim
             for b = nel+1:sdim
-                jb = jb + 1;
-                %A = (e_a - e_i) d_{ij} d_{ab} * <aj||ib>
-                A(ia,jb) = (eps(a) - eps(i)) * (i == j) * (a == b) + ...
-                    seri(a,j,i,b);
-                %B = <ab||ij>
-                B(ia,jb) = seri(a,b,i,j);
+                emp2 = emp2 + 0.25*seri(i,j,a,b)*seri(i,j,a,b)/...
+                    (eps(i) + eps(j) - eps(a) - eps(b));
             end
         end
-        
     end
 end
 
-fprintf('Solving TDHF...\n')
-%M = (A+B)*(A-B);
-M = [A, B; -conj(B), -conj(A)];
-[ctd, etd] = eig(M);
 
-% fprintf('Solving CIS...\n')
-% [ctd, etd] = eig(A);
-
-etd(sdim+1:end,:) = -etd(sdim+1:end,:);
-
-% sort
-[etd, eI] = sort(diag(etd));
-ctd = ctd(:,eI);
-etd = etd*27.211396132;
-out = etd;
+out = emp2;
 
 fprintf('----------------------------------------\n')
-fprintf('Excited State Energies (eV): \n')
-for i=1:length(etd)
-    if etd(i) > 0
-        form2 = '%d eV\n';
-        str = sprintf(form2,etd(i));
-        fprintf(str)  
-    end
-end
+form2 = 'Correlation Energy (MP2): %d.\n';
+str = sprintf(form2,emp2);
+fprintf(str)
 fprintf('----------------------------------------\n')
+
 end
+
 
 function y = fs( x )
     y = floor((x+1)/2);
 end
-

@@ -9,7 +9,7 @@ function [ out ] = mocalc( atoms, xyz, totalcharge, options )
 %                        e.g. [6 8] for CO 
 %
 %   xyz                  Kx3 array of Cartesian coordinates of a nuclei, in
-%                        ångström.
+%                        ?ngstr?m.
 %
 %   totalcharge          total charge of the molecule, in elementary charges
 %
@@ -29,18 +29,18 @@ function [ out ] = mocalc( atoms, xyz, totalcharge, options )
 %
 % Output:
 %   out                a structure that contains several fields:
-%        .S            overlap matrix (M×M)
-%        .T            kinetic energy matrix (M×M)
-%        .Vne          electron-nuclear attraction matrix (M×M)
-%        .Vee          electron-electron repulsion matrix (M×M)
+%        .S            overlap matrix (M?M)
+%        .T            kinetic energy matrix (M?M)
+%        .Vne          electron-nuclear attraction matrix (M?M)
+%        .Vee          electron-electron repulsion matrix (M?M)
 %        .ERI          4D array of electron-electron repulsion integrals 
-%                      (M×M×M×M) 
-%        .epsilon      MO energies (1×M), in hartrees, in ascending order,
+%                      (M?M?M?M) 
+%        .epsilon      MO energies (1?M), in hartrees, in ascending order,
 %                      occupied and virtual orbitals
-%        .C            MO coefficient matrix (M×M), of occupied and 
+%        .C            MO coefficient matrix (M?M), of occupied and 
 %                      virtual orbitals, sorted in ascending order of 
 %                      orbital energy
-%        .P            density matrix (M×M) sorted in ascending order of 
+%        .P            density matrix (M?M) sorted in ascending order of 
 %                      orbital energy
 %        .E0           electronic ground-state energy of the molecule, in 
 %                      hartrees
@@ -52,6 +52,8 @@ function [ out ] = mocalc( atoms, xyz, totalcharge, options )
 % Get Basis Set
 basissetdef = basisread(options.basisset);
 basis = makebasis(atoms,xyz,basissetdef);
+
+fprintf('Forming integrals...\n')
 
 % Initialize structure for output, include S, T, Vne, Vee generation
 out = struct(...
@@ -89,10 +91,14 @@ for c = 1:length(atoms)
 end
 Etotal = Vnn;
 
+fprintf('Starting SCF...\n')
+
 % SCF Loop
+tic
 ERI = out.Vee;
 diffE = 1000 + options.tolEnergy;
 diffP = 1000 + options.tolDensity;
+count = 0;
 if strcmp(options.Method, 'HF')
     
     while or(diffE > options.tolEnergy, diffP > options.tolDensity)
@@ -138,6 +144,12 @@ if strcmp(options.Method, 'HF')
 
         diffE = abs(Elast - Etotal);
         diffP = max(abs(P(:)-Plast(:)));
+        
+        count = count + 1;
+        
+        form = 'SCF loop %d E(SCF) = %d.\n';
+        str = sprintf(form,count,Etotal);
+        fprintf(str)
         
     end
     
@@ -198,10 +210,24 @@ elseif strcmp(options.Method,'KS')
        
         diffE = abs(Elast - Etotal);
         diffP = max(abs(P(:)-Plast(:)));
+        
+        count = count + 1;
+        
+        form = 'SCF loop %d E(SCF) = %d.\n';
+        str = sprintf(form,count,Etotal);
+        fprintf(str)
     end
 else
     disp('Unsupported method specified')
 end
+fprintf('SCF Completed\n')
+fprintf('----------------------------------------\n')
+form2 = 'E(SCF) = %d.\n';
+str = sprintf(form2,Etotal);
+fprintf(str)
+fprintf('----------------------------------------\n')
+
+% Output
 out.Exc = Exc;
 out.C = C;
 out.P = P;

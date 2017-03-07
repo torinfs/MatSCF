@@ -4,16 +4,16 @@ clear; clc;
 load('testcases_v04');
 
 %%
-tnum= 3;
+clc;
+tnum = 6;
 
 options = struct('basisset', testcase(tnum).Basis,...
                  'tolEnergy', 1e-8,...
                  'tolDensity', 1e-8,...
                  'Method', 'HF');
-             
-xyz = [0 0 0; 0 0 0.9295];
-             
-out = mocalc(testcase(tnum).Elements, xyz,...
+
+out = mocalc(testcase(tnum).Elements, testcase(tnum).xyz,...
          testcase(tnum).TotalCharge, options);
      
-out2 = tdhf(out, sum(testcase(tnum).Elements)-testcase(tnum).TotalCharge);
+outMP2 = mp2(out, sum(testcase(tnum).Elements)-testcase(tnum).TotalCharge);
+outTDHF = tdhf(out, sum(testcase(tnum).Elements)-testcase(tnum).TotalCharge);

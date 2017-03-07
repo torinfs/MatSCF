@@ -16,61 +16,43 @@ for i=1:numel(in.epsilon)
 end
 dim = length(eriAO);
 
+fprintf('Transforming integrals to MO basis...\n')
+
 temp = zeros(dim,dim,dim,dim);
 temp2 = zeros(dim,dim,dim,dim);
 temp3 = zeros(dim,dim,dim,dim);
 eriMO = zeros(dim,dim,dim,dim);
 
-fprintf('Transforming ERIs...\n')
-
-% for p = 1:dim
-%    for mu = 1:dim
-%       temp(p,:,:,:) = temp(p,:,:,:) + cAO(mu,p)*eriAO(mu,:,:,:);
-%    end
-%    
-%    for q = 1:dim
-%        for nu = 1:dim
-%            temp2(p,q,:,:) = temp2(p,q,:,:) + cAO(nu,q)*temp(p,nu,:,:);
-%        end
-%        
-%        for r = 1:dim
-%             for lam = 1:dim
-%                 temp3(p,q,r,:) = temp3(p,q,r,:) + cAO(lam,r)*temp2(p,q,lam,:);
-%             end
-%             
-%             for s = 1:dim
-%                 for kap = 1:dim
-%                     eriMO(p,q,r,s) = eriMO(p,q,r,s) + cAO(kap,s)*...
-%                                                         temp3(p,q,r,kap);
-%                 end
-%                 
-%             end
-%        end
-%    end
-% end
-
+% N^5 scaling transformation
 for p = 1:dim
-    for q = 1:dim
-        for r = 1:dim
-            for s = 1:dim
-                for mu = 1:dim
-                    for nu = 1:dim
-                        for lam = 1:dim
-                            for kap = 1:dim
-                                eriMO(p,q,r,s) = cAO(mu, p)*cAO(nu, q)*...
-                                    cAO(lam, r)*cAO(kap, s)*eriAO(mu,nu,lam,kap);
-                            end
-                        end
-                    end
-                end
+   for mu = 1:dim
+      temp(p,:,:,:) = temp(p,:,:,:) + cAO(mu, p)*eriAO(mu,:,:,:);
+   end
+   
+   for q = 1:dim
+       for nu = 1:dim
+           temp2(p,q,:,:) = temp2(p,q,:,:) + cAO(nu, q)*temp(p,nu,:,:);
+       end
+       
+       for r = 1:dim
+            for lam = 1:dim
+                temp3(p,q,r,:) = temp3(p,q,r,:) + cAO(lam, r)*temp2(p,q,lam,:);
             end
-        end
-    end
+            
+            for s = 1:dim
+                for kap = 1:dim
+                    eriMO(p,q,r,s) = eriMO(p,q,r,s) + cAO(kap, s)*...
+                                                        temp3(p,q,r,kap);
+                end
+                
+            end
+            
+       end
+   end
 end
 
 
-sdim = dim*2;
-
+sdim = 2*dim;
 seri = zeros(sdim,sdim,sdim,sdim);
 
 for p = 1:sdim
@@ -82,7 +64,7 @@ for p = 1:sdim
             for s = 1:sdim
                 j = eriMO(ps, rs, qs, fs(s))*(mod(p,2) == mod(r,2))*...
                         (mod(q,2) == mod(s,2));
-                k = eriMO(ps, qs, fs(s), rs)*(mod(p,2) == mod(s,2))*...
+                k = eriMO(ps, fs(s), qs, rs)*(mod(p,2) == mod(s,2))*...
                         (mod(q,2) == mod(r,2));
                 %spin eri is double bar integral; i.e. <pq||rs>
                 seri(p,q,r,s) = j - k;
@@ -91,7 +73,6 @@ for p = 1:sdim
     end
 end
 
-% Begin TDHF
 A = zeros(sdim);
 B = zeros(sdim);
 
@@ -102,7 +83,6 @@ for i = 1:nel
     for a = nel+1:sdim
         ia = ia + 1;
         jb = 0;
-        
         for j = 1:nel
             for b = nel+1:sdim
                 jb = jb + 1;
@@ -112,27 +92,41 @@ for i = 1:nel
                 %B = <ab||ij>
                 B(ia,jb) = seri(a,b,i,j);
             end
-        end 
+        end
+        
     end
 end
 
 fprintf('Solving TDHF...\n')
-M = (A+B)*(A-B);
-M = [A, B; -B, -A];
+%M = (A+B)*(A-B);
+M = [A, B; -conj(B), -conj(A)];
 [ctd, etd] = eig(M);
 
 % fprintf('Solving CIS...\n')
 % [ctd, etd] = eig(A);
 
+etd(sdim+1:end,:) = -etd(sdim+1:end,:);
+
 % sort
 [etd, eI] = sort(diag(etd));
-ctd = real(ctd(:,eI));
+ctd = ctd(:,eI);
+etd = etd*27.211396132;
+out = etd;
 
-out = {ctd, etd};
+fprintf('----------------------------------------\n')
+fprintf('Excited State Energies (eV): \n')
+for i=1:length(etd)
+    if etd(i) > 0
+        form2 = '%d eV\n';
+        str = sprintf(form2,etd(i));
+        fprintf(str)  
+    end
+end
+fprintf('----------------------------------------\n')
 
-fprintf('TDHF Done\n')
 end
 
 function y = fs( x )
     y = floor((x+1)/2);
 end
+

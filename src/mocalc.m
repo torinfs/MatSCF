@@ -53,6 +53,8 @@ function [ out ] = mocalc( atoms, xyz, totalcharge, options )
 basissetdef = basisread(options.basisset);
 basis = makebasis(atoms,xyz,basissetdef);
 
+fprintf('Forming integrals...\n')
+
 % Initialize structure for output, include S, T, Vne, Vee generation
 out = struct(...
             'S',         int_overlap(basis),...
@@ -89,10 +91,14 @@ for c = 1:length(atoms)
 end
 Etotal = Vnn;
 
+fprintf('Starting SCF...\n')
+
 % SCF Loop
+tic
 ERI = out.Vee;
 diffE = 1000 + options.tolEnergy;
 diffP = 1000 + options.tolDensity;
+count = 0;
 if strcmp(options.Method, 'HF')
     
     while or(diffE > options.tolEnergy, diffP > options.tolDensity)
@@ -138,6 +144,12 @@ if strcmp(options.Method, 'HF')
 
         diffE = abs(Elast - Etotal);
         diffP = max(abs(P(:)-Plast(:)));
+        
+        count = count + 1;
+        
+        form = 'SCF loop %d E(SCF) = %d.\n';
+        str = sprintf(form,count,Etotal);
+        fprintf(str)
         
     end
     
@@ -198,10 +210,24 @@ elseif strcmp(options.Method,'KS')
        
         diffE = abs(Elast - Etotal);
         diffP = max(abs(P(:)-Plast(:)));
+        
+        count = count + 1;
+        
+        form = 'SCF loop %d E(SCF) = %d.\n';
+        str = sprintf(form,count,Etotal);
+        fprintf(str)
     end
 else
     disp('Unsupported method specified')
 end
+fprintf('SCF Completed\n')
+fprintf('----------------------------------------\n')
+form2 = 'E(SCF) = %d.\n';
+str = sprintf(form2,Etotal);
+fprintf(str)
+fprintf('----------------------------------------\n')
+
+% Output
 out.Exc = Exc;
 out.C = C;
 out.P = P;

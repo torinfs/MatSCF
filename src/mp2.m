@@ -9,24 +9,37 @@ end
 dim = length(eriAO);
 
 fprintf('Solving MP2 Energy...\n')
+
+temp = zeros(dim,dim,dim,dim);
+temp2 = zeros(dim,dim,dim,dim);
+temp3 = zeros(dim,dim,dim,dim);
 eriMO = zeros(dim,dim,dim,dim);
+
 for p = 1:dim
-    for q = 1:dim
-        for r = 1:dim
-            for s = 1:dim
-                for mu = 1:dim
-                    for nu = 1:dim
-                        for lam = 1:dim
-                            for kap = 1:dim
-                                eriMO(p,q,r,s) = eriMO(p,q,r,s) + (cAO(mu, p)*cAO(nu, q)*...
-                                    cAO(lam, r)*cAO(kap, s)*eriAO(mu,nu,lam,kap));
-                            end
-                        end
-                    end
-                end
+   for mu = 1:dim
+      temp(p,:,:,:) = temp(p,:,:,:) + cAO(mu, p)*eriAO(mu,:,:,:);
+   end
+   
+   for q = 1:dim
+       for nu = 1:dim
+           temp2(p,q,:,:) = temp2(p,q,:,:) + cAO(nu, q)*temp(p,nu,:,:);
+       end
+       
+       for r = 1:dim
+            for lam = 1:dim
+                temp3(p,q,r,:) = temp3(p,q,r,:) + cAO(lam, r)*temp2(p,q,lam,:);
             end
-        end
-    end
+            
+            for s = 1:dim
+                for kap = 1:dim
+                    eriMO(p,q,r,s) = eriMO(p,q,r,s) + cAO(kap, s)*...
+                                                        temp3(p,q,r,kap);
+                end
+                
+            end
+            
+       end
+   end
 end
 
 
@@ -65,6 +78,12 @@ end
 
 
 out = emp2;
+
+fprintf('----------------------------------------\n')
+form2 = 'Correlation Energy (MP2): %d.\n';
+str = sprintf(form2,emp2);
+fprintf(str)
+fprintf('----------------------------------------\n')
 
 end
 

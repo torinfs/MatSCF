@@ -5,7 +5,7 @@ load('testcases_v04');
 
 %%
 clc;
-tnum = 3;
+tnum = 6;
 
 options = struct('basisset', testcase(tnum).Basis,...
                  'tolEnergy', 1e-8,...
@@ -17,3 +17,4 @@ out = mocalc(testcase(tnum).Elements, testcase(tnum).xyz,...
      
 outMP2 = mp2(out, sum(testcase(tnum).Elements)-testcase(tnum).TotalCharge);
 outTDHF = tdhf(out, sum(testcase(tnum).Elements)-testcase(tnum).TotalCharge);
+

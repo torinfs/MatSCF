@@ -1,2 +1,2 @@
 # ClosedShellHF
-Closed Shell Hartree-Fock Algorithm
+Restricted Hartree-Fock program written in MATLAB
